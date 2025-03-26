@@ -1,19 +1,28 @@
-# server/app/routes/analyze_routes.py
 from flask import Blueprint, request, jsonify
+from ..services.vision_service import classify_image_with_vision_api
+from ..services.gemini_service import analyze_with_gemini
 
-bp = Blueprint('analyze_routes', __name__)
 
-@bp.route('/', methods=['GET'])
-def home():
-    return jsonify({'message': 'Welcome to EcoScan API'}), 200
+bp = Blueprint("analyze_bp", __name__)
 
-@bp.route('/api/devices', methods=['POST'])
-def add_device():
-    data = request.get_json()
-    image_url = data.get('image_url')
-    analysis_results = analyze_device(image_url)
-    if 'error' in analysis_results:
-        return jsonify({'message': 'Failed to analyze device', 'error': analysis_results['error']}), 500
-    device = DeviceModel(analysis_results)
-    device.save()
-    return jsonify({'message': 'Device added successfully', 'analysis': analysis_results}), 201
+@bp.route("/analyze", methods=["POST"])
+def analyze():
+    try:
+        data = request.get_json()
+        image_url = data.get("image_url")
+        if not image_url:
+            return jsonify({"error": "Missing image URL"}), 400
+
+        # Use vision first to classify
+        from ..services.vision_service import classify_image_with_vision_api
+        from ..services.gemini_service import analyze_with_gemini
+
+        labels = classify_image_with_vision_api(image_url)
+        description = ", ".join(labels)
+        result = analyze_with_gemini(description)
+
+        return jsonify({"labels": labels, "result": result})
+    except Exception as e:
+        print("❌ Error in /api/analyze:", str(e))
+        return jsonify({"error": str(e)}), 500
+
