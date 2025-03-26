@@ -275,11 +275,7 @@ export default function AnalysisResult({ result, onRetry }) {
           </CardContent>
         </Card>
 
-        <div className="mt-8 text-center">
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
-            Find Recycling Centers Near Me
-          </Button>
-        </div>
+        
 
         
         {/* Optionally, you can render the onRetry button somewhere if needed */}
