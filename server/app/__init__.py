@@ -11,5 +11,6 @@ client = MongoClient(app.config['MONGO_URI'])
 db = client['ewaste_db']
 
 # Register API routes
-from .routes import analyze_routes
+from .routes import analyze_routes, recycler_routes
 app.register_blueprint(analyze_routes.bp, url_prefix="/api")
+app.register_blueprint(recycler_routes.bp_recyclers, url_prefix="/api")
