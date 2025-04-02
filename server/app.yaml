@@ -1,0 +1,8 @@
+runtime: python311  # or whatever version you're using
+
+entrypoint: gunicorn -b :$PORT run:app
+
+env_variables:
+  GEMINI_API_KEY: "AIzaSyDrxA9UX2kvwZkjYZ5XQKxTFSmkJtaO-8c"
+  GOOGLE_VISION_API_KEY: "AIzaSyAbwZk2ETb8INzUN2wd7vfGY2GY-vENb6k"
+  PLACES_API_KEY: "AIzaSyCCR8VL-rh5RWJA1xaV2mjc4db4e2Z43-4"
