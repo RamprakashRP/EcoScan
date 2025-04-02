@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Recycle,
   PenToolIcon as Tool,
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import EcowasteRecyclers from "./EcoWasteRecyclers" // adjust path as needed
 
 export default function AnalysisResult({ result, onRetry }) {
   if (!result)
@@ -77,10 +79,53 @@ export default function AnalysisResult({ result, onRetry }) {
     return "bg-red-500"
   }
 
+  // State for nearby recyclers
+  const [recyclers, setRecyclers] = useState([])
+  const [showRecyclers, setShowRecyclers] = useState(false)
+  const [loadingRecyclers, setLoadingRecyclers] = useState(false)
+
+  const handleNearbyRecyclers = () => {
+    // Toggle dropdown if already visible
+    if (showRecyclers) {
+      setShowRecyclers(false)
+      return
+    }
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser")
+      return
+    }
+    setLoadingRecyclers(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        // Call backend endpoint for nearby recyclers
+        fetch("http://localhost:5000/api/nearby_recyclers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude, longitude }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            setRecyclers(data.recyclers)
+            setShowRecyclers(true)
+          })
+          .catch((err) => {
+            console.error("Error fetching recyclers:", err)
+            alert("Failed to fetch nearby recyclers.")
+          })
+          .finally(() => setLoadingRecyclers(false))
+      },
+      (error) => {
+        console.error("Error getting geolocation:", error)
+        alert("Unable to retrieve your location.")
+        setLoadingRecyclers(false)
+      }
+    )
+  }
+
   return (
     <main className="min-h-screen p-4 md:p-8 dark">
       <div className="max-w-5xl mx-auto">
-
         {/* Device Info Section */}
         <Card className="mb-6 border-none bg-slate-800 shadow-lg">
           <CardHeader className="bg-slate-800 border-b border-slate-700 pb-4">
@@ -131,7 +176,6 @@ export default function AnalysisResult({ result, onRetry }) {
                     indicatorClassName={getScoreColor(deviceData.scores.repairability)}
                   />
                 </div>
-
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium text-slate-300">Recyclability</span>
@@ -143,7 +187,6 @@ export default function AnalysisResult({ result, onRetry }) {
                     indicatorClassName={getScoreColor(deviceData.scores.recyclability)}
                   />
                 </div>
-
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium text-slate-300">Toxicity</span>
@@ -155,7 +198,6 @@ export default function AnalysisResult({ result, onRetry }) {
                     indicatorClassName={getScoreColor(deviceData.scores.toxicity)}
                   />
                 </div>
-
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium text-slate-300">Resale Value</span>
@@ -199,7 +241,6 @@ export default function AnalysisResult({ result, onRetry }) {
                   </div>
                   <p className="text-sm text-slate-300">{deviceData.suggestions.repair}</p>
                 </div>
-
                 <div className="bg-slate-700/50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <RefreshCw className="h-5 w-5 text-green-400" />
@@ -207,7 +248,6 @@ export default function AnalysisResult({ result, onRetry }) {
                   </div>
                   <p className="text-sm text-slate-300">{deviceData.suggestions.reuse}</p>
                 </div>
-
                 <div className="bg-slate-700/50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Recycle className="h-5 w-5 text-green-400" />
@@ -226,10 +266,7 @@ export default function AnalysisResult({ result, onRetry }) {
               </div>
               <div className="space-y-4">
                 {deviceData.toxicComponents.map((component, index) => (
-                  <div
-                    key={index}
-                    className="border-l-4 border-amber-500 pl-3 py-1 bg-slate-700/30 rounded-r-lg"
-                  >
+                  <div key={index} className="border-l-4 border-amber-500 pl-3 py-1 bg-slate-700/30 rounded-r-lg">
                     <h4 className="text-sm font-medium text-white">{component.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs font-medium bg-amber-900/50 text-amber-300 px-2 py-0.5 rounded-full border border-amber-800/50">
@@ -263,7 +300,7 @@ export default function AnalysisResult({ result, onRetry }) {
             </div>
 
             {/* AI Summary */}
-            <div>
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <Brain className="h-5 w-5 text-purple-400" />
                 <h3 className="text-lg font-semibold text-white">AI Summary</h3>
@@ -272,15 +309,34 @@ export default function AnalysisResult({ result, onRetry }) {
                 <p className="text-slate-300 leading-relaxed">{deviceData.summary}</p>
               </div>
             </div>
+
+            {/* Nearby Recyclers Button & Dropdown */}
+            <div className="mb-8">
+              <Button
+                onClick={handleNearbyRecyclers}
+                className="bg-gradient-to-r from-green-600 to-green-400 hover:from-green-700 hover:to-green-500 text-white py-2 px-6 rounded-lg shadow-lg"
+              >
+                Nearby Recyclers
+              </Button>
+              {showRecyclers && (
+                <div className="mt-4">
+                  {loadingRecyclers ? (
+                    <p className="text-slate-400">Loading...</p>
+                  ) : (
+                    <EcowasteRecyclers recyclersData={recyclers} />
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        
-
-        
-        {/* Optionally, you can render the onRetry button somewhere if needed */}
+        {/* Try Another Button */}
         <div className="mt-8 text-center">
-          <Button onClick={onRetry} className="bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded">
+          <Button
+            onClick={onRetry}
+            className="bg-gradient-to-r from-gray-700 to-gray-500 hover:from-gray-800 hover:to-gray-600 text-white py-2 px-6 rounded-lg shadow-lg"
+          >
             Try Another
           </Button>
         </div>
